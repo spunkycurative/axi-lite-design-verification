@@ -3,7 +3,7 @@ class driver;
   transaction tr;
   
   mailbox #(transaction)mbxgd;
-  mailbox #(transaction)mbxdm;
+  mailbox #(transaction)mbxdm;//whatever data we apply to a DUT will be sent to a monitor. The monitor will generate the data that we send to a DUT during a write operation and send it to a scoreboard. The scoreboard will store that in an array and finally use it as reference data during a read operation.
   
   function new(mailbox #(transaction)mbxgd,mailbox #(transaction)mbxdm);
     this.mbxgd=mbxgd;
@@ -20,6 +20,7 @@ class driver;
     vif.arvalid<=1'b0;
     vif.araddr<=0;
     vif.araddr<=0;
+    vif.rready<=0;
     repeat(5)@(posedge vif.clk);
     vif.resetn<=1'b1;
     
@@ -30,28 +31,28 @@ class driver;
   task write_data(input transaction tr);
     $display("[DRV]:op:%0b , awaddr=%0d , wdata=%0d",tr.op,tr.awaddr,tr.wdata);
     mbxdm.put(tr);
-    ///sent an addr
+    //sent an addr
     vif.resetn<=1'b1;
     vif.awvalid<=1'b1;//valid addrs
     vif.arvalid<=1'b0;
     vif.araddr<=0;
     vif.awaddr<=tr.awaddr;//awaddr will be the addr sent by gen
-    ///wait for the slave to recieve it
-    wait (vif.awready);
+    //wait for the slave to receive it
+    wait (vif.awvalid && vif.awready);
     @(posedge vif.clk);
     //sent a data
     vif.awvalid<=1'b0;
     vif.awaddr<=0;
     vif.wvalid<=1'b1;
     vif.wdata<=tr.wdata;
-    ///wait for slave to receive it 
-    wait (vif.awready);
+    //wait for slave to receive it 
+    wait (vif.wvalid && vif.wready);
     @(posedge vif.clk);
     vif.wvalid<=1'b0;
     vif.wdata<=0;
     vif.bready<=1'b1;
     vif.rready<=1'b0;
-    wait(vif.bvalid);//wait for the response of write transaction
+    wait(vif.bvalid && vif.bready);//wait for the response of write transaction
     @(posedge vif.clk);
     vif.bready<=1'b0;
   endtask
@@ -88,3 +89,5 @@ class driver;
     end
     
   endtask
+
+endclass
