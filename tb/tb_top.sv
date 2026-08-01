@@ -15,6 +15,8 @@ module tb;
   
   axilite_s dut(vif.clk,vif.resetn,vif.awvalid,vif.awready,vif.awaddr,vif.wvalid,vif.wready,vif.wdata,vif.bvalid,vif.bready,vif.bresp,vif.arvalid,vif.arready,vif.araddr,vif.rvalid,vif.rready,vif.rdata,vif.rresp);
   
+  axi_assertions asrt(vif);
+  
   initial begin
     vif.clk<=0;
   end
@@ -28,7 +30,7 @@ module tb;
     drv=new(mbxgd,mbxdm);
     mon=new(mbxms,mbxdm);
     sco=new(mbxms);
-    gen.count=10;
+    gen.count=200;
     drv.vif=vif;
     mon.vif=vif;
     gen.sconext=nextgm;
@@ -45,6 +47,7 @@ module tb;
       sco.run();
     join_none
     wait(gen.done.triggered);
+    #100;
     $finish();
   end
   
@@ -54,8 +57,7 @@ module tb;
   end
   
   initial begin
-    #10000;
-    //$display("TIMEOUT");
+    #100000;
     $finish;
     
   end
